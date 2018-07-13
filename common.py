@@ -1,6 +1,6 @@
 """
 This script holds the common functions between the GOCDB and
-APEL metric collecting scriptsi
+APEL metric collecting scripts
 """
 import logging
 import json
