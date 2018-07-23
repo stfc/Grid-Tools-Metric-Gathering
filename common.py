@@ -6,7 +6,6 @@ import logging
 import json
 import requests
 from datetime import datetime, timedelta
-import urllib
 
 date = datetime.strftime(datetime.now() - timedelta(1), '%Y.%m.%d')
 
@@ -76,8 +75,8 @@ class ESWrite(object):
 
 def es_check():
     '''This function checks to see if elastic search is up '''
-    code = urllib.urlopen("http://elasticsearch2.gridpp.rl.ac.uk" +
-   "/logstash-gridtools-metrics-2018.07.07/gocdb/_search").getcode()
+    code = requests.get("http://elasticsearch2.gridpp.rl.ac.uk" +
+                        "/logstash-gridtools-metrics-2018.07.07/gocdb/_search").status_code
     if code == 200:
         return True
     else:
@@ -85,7 +84,7 @@ def es_check():
 
 def gocdb_check():
     '''This functions checks if GOCDB is online and responding'''
-    code = urllib.urlopen("https://goc.egi.eu").getcode()
+    code = requests.get("https://goc.egi.eu").status_code
     if code == 200:
         return True
     else:
