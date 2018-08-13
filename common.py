@@ -81,11 +81,3 @@ def es_check():
         return True
     else:
         return False
-
-def gocdb_check():
-    '''This functions checks if GOCDB is online and responding'''
-    code = requests.get("https://goc.egi.eu").status_code
-    if code == 200:
-        return True
-    else:
-        return False

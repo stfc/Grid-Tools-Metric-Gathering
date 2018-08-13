@@ -4,7 +4,7 @@ import xml.dom.minidom
 from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 import logging
-from common import GetData, ModLogger, ESWrite, es_check, gocdb_check
+from common import GetData, ModLogger, ESWrite, es_check
 from optparse import OptionParser
 
 
@@ -35,17 +35,16 @@ def get_sites(endpoint, data_obj):
     """
     sitename_list = []
     for service_endpoint in data_obj:
-        gocdb_portal_url = \
-                service_endpoint.getElementsByTagName('GOCDB_PORTAL_URL'
-                                                      )[0].firstChild.nodeValue
+        gocdb_portal_url = service_endpoint.getElementsByTagName(
+            'GOCDB_PORTAL_URL'
+        )[0].firstChild.nodeValue
 
         sitename = GetData('SITENAME', service_endpoint, gocdb_portal_url)
         sitename = sitename.data_finder()
-        if sitename not in sitename_list:  # adds the sitenames to a list
-                                           # if they are not already in it
+        # Adds the  sitenames to a list if they are not already in it
+        if sitename not in sitename_list:
             sitename_list.append(sitename)
-        else:
-            pass
+
     return(len(sitename_list), sitename_list)
 
 def get_services(endpoint, data_obj):
@@ -69,23 +68,26 @@ def get_services(endpoint, data_obj):
     """
     counter = 0
     for service_endpoint in data_obj:
-        gocdb_portal_url = \
-             service_endpoint.getElementsByTagName('GOCDB_PORTAL_URL'
-                                                  )[0].firstChild.nodeValue
+        gocdb_portal_url = service_endpoint.getElementsByTagName(
+            'GOCDB_PORTAL_URL'
+        )[0].firstChild.nodeValue
 
         service_type = GetData('SERVICE_TYPE', service_endpoint,
-        gocdb_portal_url)
+                               gocdb_portal_url)
+
         service_type = service_type.data_finder()
+
         try:
-            hostdn = service_endpoint.getElementsByTagName('HOSTDN'
-                     )[0].firstChild.nodeValue
+            hostdn = service_endpoint.getElementsByTagName(
+                'HOSTDN'
+            )[0].firstChild.nodeValue
+
             if service_type == endpoint:
                 counter = counter + 1
-            else:
-                pass
+
         except IndexError:
-            logger.warning('Index error when requesting HOSTDN from '
-                            + gocdb_portal_url)
+            logger.warning('Index error when requesting HOSTDN from ' + gocdb_portal_url)
+
     return counter
 
 def get_countries(endpoint, data_obj):
@@ -112,20 +114,20 @@ def get_countries(endpoint, data_obj):
     country_list_temp = []
     global country_list
     for service_endpoint in data_obj:
-        gocdb_portal_url = \
-                service_endpoint.getElementsByTagName('GOCDB_PORTAL_URL'
-                                                      )[0].firstChild.nodeValue
+        gocdb_portal_url = service_endpoint.getElementsByTagName(
+            'GOCDB_PORTAL_URL'
+        )[0].firstChild.nodeValue
+
         country = GetData('COUNTRY_NAME', service_endpoint, gocdb_portal_url)
         country = country.data_finder()
+
         try:
             if country not in country_list:
                 country_list.append(country)
-            else:
-                pass
+
             if country not in country_list_temp:
                 country_list_temp.append(country)
-            else:
-                pass
+
         except IndexError:
             logger.error("Index error when requesting country name from" +
                           gocdb_portal_url)
@@ -187,7 +189,7 @@ def main(options):
     ModLogger('APEL.log').logger_mod()
 
     logger.info('Service has started')
-    gocdb_up = gocdb_check()
+
     es_up = es_check()
     # List of service endpoint types to record metrics about
     endpoint_types = ['gLite-APEL', 'APEL', 'eu.egi.cloud.accounting',
@@ -196,40 +198,42 @@ def main(options):
 
     # master dictionary
     apel_metrics_dict = {}
-    global country_list
-    if gocdb_up == True:
+
+    all_countries = set()
+    try:
+        # Get the number of sites running atleast one of our endpoints
         for endpoint in endpoint_types:
-            response = \
-            requests.get('https://goc.egi.eu/gocdbpi/public/?method='+
-                              'get_service_endpoint&service_type='
-                              + endpoint, verify=False)
+            response = requests.get(
+                'https://goc.egi.eu/gocdbpi/public/?method=get_service_endpoint&service_type=' + endpoint,
+                verify=False
+            )
 
             data = response.text
             context = xml.dom.minidom.parseString(data)
-            service_endpoint_obj = \
-                context.getElementsByTagName('SERVICE_ENDPOINT')
+            service_endpoint_obj = context.getElementsByTagName(
+                'SERVICE_ENDPOINT'
+            )
 
+            site_number, site_list = get_sites(endpoint, service_endpoint_obj)
 
-            (apel_metrics_dict['Number of sites runnning at least one '
-                               + endpoint + " endpoint"],
-            apel_metrics_dict['List of sites runnning at least one ' +
-                               endpoint + " endpoint"]) = \
-                              get_sites(endpoint, service_endpoint_obj)
+            apel_metrics_dict['Number of sites runnning at least one ' + endpoint + " endpoint"] = site_number
+            apel_metrics_dict['List of sites runnning at least one ' + endpoint + " endpoint"] = site_list
 
-            apel_metrics_dict['Number of ' + endpoint + ' endpoints'] = \
-                              get_services(endpoint, service_endpoint_obj)
+            apel_metrics_dict['Number of ' + endpoint + ' endpoints'] = get_services(endpoint, service_endpoint_obj)
 
-            (apel_metrics_dict['List of countries with at least one ' + endpoint
-                               + ' endpoint'],
-            apel_metrics_dict['Number of countries with at least one '+ endpoint
-            + ' endpoint']) = get_countries(endpoint, service_endpoint_obj)
+            country_list, country_number = get_countries(endpoint,
+                                                         service_endpoint_obj)
 
-        apel_metrics_dict['Total number of countries using APEL '] = \
-            len(country_list)
-        apel_metrics_dict['Complete list of countries using APEL '] = \
-            country_list
-    else:
-        print "GOCDB is currently down. No metrics can be collected!"
+            apel_metrics_dict['List of countries with at least one ' + endpoint + ' endpoint'] = country_number
+            apel_metrics_dict['Number of countries with at least one '+ endpoint + ' endpoint'] = country_list
+
+            all_countries.update(country_list)
+            apel_metrics_dict['Total number of countries using APEL '] = len(all_countries)
+            apel_metrics_dict['Complete list of countries using APEL '] = list(all_countries)
+
+    except requests.exceptions.ConnectionError:
+        logger.error("Error connecting to GOCDB, "
+                     "some metrics may not be fetched.")
 
     if es_up == True:
         for query_type in query_type_list:
@@ -242,8 +246,10 @@ def main(options):
     if options.write == "True":
         ESWrite(apel_metrics_dict).write()
     else:
-        print apel_metrics_dict
+        print(apel_metrics_dict)
+
     logger.info('Service has ended')
+
 
 if __name__ == "__main__":
     parser = OptionParser()

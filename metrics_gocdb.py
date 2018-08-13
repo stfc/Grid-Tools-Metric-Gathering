@@ -3,7 +3,7 @@ import requests
 import xml.dom.minidom
 from datetime import datetime, timedelta
 import logging
-from common import ESWrite, GetData, ModLogger, es_check, gocdb_check
+from common import ESWrite, GetData, ModLogger, es_check
 from optparse import OptionParser
 from elasticsearch import Elasticsearch
 
@@ -89,7 +89,7 @@ def get_countries(xml_obj):
     no data to help identify the error, to allow the "GetData" class to be used.
     """
 
-    #gets all the data into an object
+    # Gets all the data into an object
     site_object = xml_obj.getElementsByTagName('SITE')
 
     country_list = []  # empty list made to hold countries
@@ -99,17 +99,16 @@ def get_countries(xml_obj):
         country = GetData('COUNTRY', site, gocdb_portal_url)
         country = country.data_finder()
         try:
-            count = site.getElementsByTagName('COUNT'
+            count = site.getElementsByTagName(
+                'COUNT'
             )[0].firstChild.nodeValue  # finds the count and stores it
 
             if country not in country_list and int(count) != 0:
-                country_list.append(country) #country stored if it is not in
-                                             #the list already
-            else:
-                pass
+                # Store the country if it is not in the list already
+                country_list.append(country)
 
         except IndexError:
-            logger.error('Error when requesting count')#logs the error
+            logger.error('Error when requesting count')
 
     return (len(country_list), country_list)
 
@@ -139,17 +138,16 @@ def get_queries():
         "query": {
             "bool": {
                 "must": [
-                        {"match": {"type":"gocdb"}},
-                        {"match": {"fields.service_level": "prod"}}
-                    ]
-               }
-             },
+                    {"match": {"type": "gocdb"}},
+                    {"match": {"fields.service_level": "prod"}}
+                ]
+            }
+        },
         "query": {
-            "prefix" : {"endpoint":"get_"}
-     },
-        "size":0
-}
-
+            "prefix": {"endpoint": "get_"}
+        },
+        "size": 0
+    }
 
     result = elastic.search(index="logstash-" + date, body=params_dict)
     return result["hits"]["total"]
@@ -164,7 +162,6 @@ def __main__(options):
     the data collected to Elastic Search if "options" is set to "True".
     """
 
-    gocdb_up = gocdb_check()
     es_up = es_check()
     logger = logging.getLogger('GOCDB logger')
     logger.addHandler(logging.NullHandler())
@@ -173,31 +170,31 @@ def __main__(options):
 
     gocdb_metrics_dict = {}
 
-    if gocdb_up == True:
+    try:
+        # Get the number of registered service providers (aka sites)
+        # registered in GOCDB.
+        response = requests.get(
+            'https://goc.egi.eu/gocdbpi/public/?method=get_site_list'
+        )
 
-        response = requests.get\
-                    ('https://goc.egi.eu/gocdbpi/public/?method=get_site_list'
-                     , verify=False)
         response = response.text
         response = xml.dom.minidom.parseString(response)
         gocdb_metrics_dict['Number of sites in GOCDB'] = get_sites(response)
 
-
-        response = requests.get('https://goc.egi.eu/gocdbpi/public/?method='
-                               'get_site_count_per_country', verify=False)
+        # Get the number and names of the countries with atleast one site.
+        response = requests.get(
+            'https://goc.egi.eu/gocdbpi/public/?method=get_site_count_per_country'
+        )
 
         response = response.text
         response = xml.dom.minidom.parseString(response)
-        (gocdb_metrics_dict['Number of countries using GOCDB'],
-        gocdb_metrics_dict['List of countries using GOCDB']) =\
-                                      get_countries(response)
+        country_number, country_list = get_countries(response)
+        gocdb_metrics_dict['Number of countries using GOCDB'] = country_number
+        gocdb_metrics_dict['List of countries using GOCDB'] = country_list
 
-    else:
-
-        print("GOCDB is currently down."
-              " The metrics from GOCDB cannot be acquired")
-
-        logger.error("GOCDB unresponsive: Data could not be fetched")
+    except requests.exceptions.ConnectionError:
+        logger.error("Error connecting to GOCDB, "
+                     "some metrics may not be fetched.")
 
     if es_up == True:
 
@@ -218,9 +215,11 @@ def __main__(options):
         ESWrite(gocdb_metrics_dict).write()
         logger.info("Elastic Search updated for " + date)
     else:
-        print gocdb_metrics_dict #This can be used for testing
+        # This can be used for testing
+        print(gocdb_metrics_dict)
 
     logger.info('Service has ended')
+
 
 if __name__ == '__main__':
     parser = OptionParser()
