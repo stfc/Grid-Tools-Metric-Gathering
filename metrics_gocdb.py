@@ -154,12 +154,13 @@ def get_queries():
 
 def __main__(options):
     """
-    This is the main class. It runs all of the functions above.
+    Runs all of the functions above to generate metrics for GOCDB.
+
     If a new metric needs to be added, make a function above and
     implement in one of the two if statements. This function also
-    checks if the GOCDB API and Elastic search are up and if they
-    are not it skips the metrics related to them. It also writes
-    the data collected to Elastic Search if "options" is set to "True".
+    checks if ElasticSearch is up and if it isn't skips metrics related to
+    data within ElasticSearch. If options.write is set to "True",
+    the data will also be written to ElasticSearch.
     """
     verify_server_cert = bool(options.verify == "True")
 

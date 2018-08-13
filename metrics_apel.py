@@ -180,10 +180,13 @@ def get_records(query_type):
 
 def main(options):
     """
-    This is the main function. It calls the rest of the functions
-    in this script and runs them in order to generate metrics for APEL.
-    These metrics can be stored in ElasticSearch by setting oprions to "True".
-    If options is not set to true it just prints the dictionary holding the data
+    Runs all of the functions above to generate metrics for APEL.
+
+    If a new metric needs to be added, make a function above and
+    implement in one of the two if statements. This function also
+    checks if ElasticSearch is up and if it isn't skips metrics related to
+    data within ElasticSearch. If options.write is set to "True",
+    the data will also be written to ElasticSearch.
     """
     verify_server_cert = bool(options.verify == "True")
 
