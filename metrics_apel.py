@@ -185,6 +185,8 @@ def main(options):
     These metrics can be stored in ElasticSearch by setting oprions to "True".
     If options is not set to true it just prints the dictionary holding the data
     """
+    verify_server_cert = bool(options.verify == "True")
+
     logger.addHandler(logging.NullHandler())
     ModLogger('APEL.log').logger_mod()
 
@@ -205,7 +207,7 @@ def main(options):
         for endpoint in endpoint_types:
             response = requests.get(
                 'https://goc.egi.eu/gocdbpi/public/?method=get_service_endpoint&service_type=' + endpoint,
-                verify=False
+                verify=verify_server_cert
             )
 
             data = response.text
@@ -256,6 +258,9 @@ if __name__ == "__main__":
     parser.add_option("-w", "--write-to-elastic", dest="write",
                       default="False",
                       help="Wether to write result to ElasticSearch or not.")
+    parser.add_option("-v", "--verify-server-certificate", dest="verify",
+                      default="True",
+                      help="Wether to verify the server certificate or not.")
 
     (options, args) = parser.parse_args()
     main(options)

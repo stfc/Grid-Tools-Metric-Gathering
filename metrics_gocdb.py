@@ -161,6 +161,7 @@ def __main__(options):
     are not it skips the metrics related to them. It also writes
     the data collected to Elastic Search if "options" is set to "True".
     """
+    verify_server_cert = bool(options.verify == "True")
 
     es_up = es_check()
     logger = logging.getLogger('GOCDB logger')
@@ -174,7 +175,8 @@ def __main__(options):
         # Get the number of registered service providers (aka sites)
         # registered in GOCDB.
         response = requests.get(
-            'https://goc.egi.eu/gocdbpi/public/?method=get_site_list'
+            'https://goc.egi.eu/gocdbpi/public/?method=get_site_list',
+            verify=verify_server_cert
         )
 
         response = response.text
@@ -183,7 +185,8 @@ def __main__(options):
 
         # Get the number and names of the countries with atleast one site.
         response = requests.get(
-            'https://goc.egi.eu/gocdbpi/public/?method=get_site_count_per_country'
+            'https://goc.egi.eu/gocdbpi/public/?method=get_site_count_per_country',
+            verify=verify_server_cert
         )
 
         response = response.text
@@ -226,6 +229,9 @@ if __name__ == '__main__':
     parser.add_option("-w", "--write-to-elastic", dest="write",
                       default="False",
                       help="Wether to write result to ElasticSearch or not.")
+    parser.add_option("-v", "--verify-server-certificate", dest="verify",
+                      default="True",
+                      help="Wether to verify the server certificate or not.")
     (options, args) = parser.parse_args()
 
     __main__(options)
