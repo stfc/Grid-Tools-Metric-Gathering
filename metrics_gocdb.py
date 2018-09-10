@@ -168,6 +168,9 @@ def __main__(options):
     else:
         verify_server_cert = options.verify
 
+    session = requests.Session()
+    session.cert = (options.certificate, options.key)
+
     es_up = es_check()
     logger = logging.getLogger('GOCDB logger')
     logger.addHandler(logging.NullHandler())
@@ -179,7 +182,7 @@ def __main__(options):
     try:
         # Get the number of registered service providers (aka sites)
         # registered in GOCDB.
-        response = requests.get(
+        response = session.get(
             'https://goc.egi.eu/gocdbpi/public/?method=get_site_list',
             verify=verify_server_cert
         )
@@ -189,7 +192,7 @@ def __main__(options):
         gocdb_metrics_dict['Number of sites in GOCDB'] = get_sites(response)
 
         # Get the number and names of the countries with atleast one site.
-        response = requests.get(
+        response = session.get(
             'https://goc.egi.eu/gocdbpi/public/?method=get_site_count_per_country',
             verify=verify_server_cert
         )
@@ -234,6 +237,12 @@ if __name__ == '__main__':
     parser.add_option("-w", "--write-to-elastic", dest="write",
                       default="False",
                       help="Wether to write result to ElasticSearch or not.")
+    parser.add_option("-c", "--certificate", dest="certificate",
+                      default="/etc/grid-security/hostcert.pem",
+                      help="The certificate used to make lv2 GOCDBPI calls")
+    parser.add_option("-k", "--key", dest="key",
+                      default="/etc/grid-security/hostkey.pem",
+                      help="The key corresponding to the certificate used")
     parser.add_option("-v", "--verify-server-certificate-against",
                       dest="verify",
                       default="/etc/grid-security/certificates",
