@@ -15,6 +15,7 @@ class TeestMetricsAPEL(unittest.TestCase):
         site_list = get_sites("APEL", xml_obj)
         answer_list = (1, [u"MD-02-IMI"])
         self.assertEquals(site_list, answer_list)
+
     def test_get_services(self):
         """Tests the get_services method"""
         apel_xml_parsed = xml.dom.minidom.parseString(apel_xml)
@@ -22,6 +23,7 @@ class TeestMetricsAPEL(unittest.TestCase):
             apel_xml_parsed.getElementsByTagName('SERVICE_ENDPOINT')
         service_list = get_services("APEL", xml_obj)
         self.assertEquals(service_list, 1)
+
     def test_get_countries(self):
         """Tests the get_countries method"""
         apel_xml_parsed = xml.dom.minidom.parseString(apel_xml)
@@ -30,6 +32,7 @@ class TeestMetricsAPEL(unittest.TestCase):
         country_list = get_countries("APEL", xml_obj)
         answer_list = ([u"CRETE"], 1)
         self.assertEquals(country_list, answer_list)
+
 
 apel_xml = """<results>
 <SERVICE_ENDPOINT PRIMARY_KEY="368G0">
@@ -56,4 +59,3 @@ apel_xml = """<results>
 <HOSTDN> ALEX TSELOS </HOSTDN>
 </SERVICE_ENDPOINT>
 </results>"""
-

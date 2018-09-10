@@ -7,6 +7,7 @@ from common import ESWrite, GetData, ModLogger, es_check
 from optparse import OptionParser
 from elasticsearch import Elasticsearch
 
+
 def _parse_get_user_xml(xml_obj):
     """
     Parse XML from GOCDBPI endpoint get_users.
@@ -25,6 +26,7 @@ def _parse_get_user_xml(xml_obj):
     users = xml_obj.getElementsByTagName("EGEE_USER")
     user_number = len(users)
     return user_number
+
 
 def _parse_get_user_xml_roles(xml_obj):
     """
@@ -50,6 +52,7 @@ def _parse_get_user_xml_roles(xml_obj):
             users_with_role_numer = users_with_role_numer + 1
 
     return users_with_role_numer
+
 
 def get_sites(xml_obj):
 
@@ -77,6 +80,7 @@ def get_sites(xml_obj):
     results = xml_obj.getElementsByTagName('SITE')
     site_number = len(results)
     return site_number
+
 
 def get_countries(xml_obj):
     """
@@ -126,6 +130,7 @@ def get_countries(xml_obj):
             logger.error('Error when requesting count')
 
     return (len(country_list), country_list)
+
 
 def get_queries():
     """
@@ -265,12 +270,15 @@ if __name__ == '__main__':
     parser.add_option("-w", "--write-to-elastic", dest="write",
                       default="False",
                       help="Wether to write result to ElasticSearch or not.")
+
     parser.add_option("-c", "--certificate", dest="certificate",
                       default="/etc/grid-security/hostcert.pem",
                       help="The certificate used to make lv2 GOCDBPI calls")
+
     parser.add_option("-k", "--key", dest="key",
                       default="/etc/grid-security/hostkey.pem",
                       help="The key corresponding to the certificate used")
+
     parser.add_option("-v", "--verify-server-certificate-against",
                       dest="verify",
                       default="/etc/grid-security/certificates",

@@ -12,6 +12,7 @@ ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
 logger = logging.getLogger('APEL logger')
 country_list = []
 
+
 def get_sites(endpoint, data_obj):
     """
     This function finds the sites using each endpoint.
@@ -41,11 +42,12 @@ def get_sites(endpoint, data_obj):
 
         sitename = GetData('SITENAME', service_endpoint, gocdb_portal_url)
         sitename = sitename.data_finder()
-        # Adds the  sitenames to a list if they are not already in it
+        # Adds the sitenames to a list if they are not already in it
         if sitename not in sitename_list:
             sitename_list.append(sitename)
 
     return(len(sitename_list), sitename_list)
+
 
 def get_services(endpoint, data_obj):
     """
@@ -90,6 +92,7 @@ def get_services(endpoint, data_obj):
 
     return counter
 
+
 def get_countries(endpoint, data_obj):
     """
     This function finds the countries using each endpoint.
@@ -130,10 +133,11 @@ def get_countries(endpoint, data_obj):
 
         except IndexError:
             logger.error("Index error when requesting country name from" +
-                          gocdb_portal_url)
+                         gocdb_portal_url)
 
 
     return(country_list_temp, len(country_list_temp))
+
 
 def get_records(query_type):
     """
@@ -177,6 +181,7 @@ def get_records(query_type):
 
     total = result["aggregations"]["total_number_loaded"]["value"]
     return total
+
 
 def main(options):
     """

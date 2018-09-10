@@ -22,12 +22,14 @@ class TestMetricsGOCDB(unittest.TestCase):
         parsed_site_xml = xml.dom.minidom.parseString(GET_SITE_XML)
         site_number = get_sites(parsed_site_xml)
         self.assertEquals(site_number, 3)
+
     def test_get_countries(self):
         """Test the get_countries method"""
         parsed_country_xml = xml.dom.minidom.parseString(GET_COUNTRY_XML)
         country_list = get_countries(parsed_country_xml)
         answer_list = (1, [u"Algeria"])
         self.assertEquals(country_list, answer_list)
+
 
 GET_USER_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <results>
@@ -109,4 +111,3 @@ GET_COUNTRY_XML = \
 <COUNT>0</COUNT>
 </SITE>
 </results>"""
-
