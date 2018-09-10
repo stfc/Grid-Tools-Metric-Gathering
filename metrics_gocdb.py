@@ -26,6 +26,31 @@ def _parse_get_user_xml(xml_obj):
     user_number = len(users)
     return user_number
 
+def _parse_get_user_xml_roles(xml_obj):
+    """
+    Parse GOCDBPI get_users XML to determine number of users with a role.
+
+    Parameters
+    ----------
+    xml_obj: xml minidom object
+             Contains the data needed, can be aquired from GOCDBPI
+
+    Returns
+    --------
+    users_with_role_number: int
+                            This represents the number of users with a role
+    """
+    users_with_role_numer = 0
+    users_with_role = xml_obj.getElementsByTagName("EGEE_USER")
+    for user in users_with_role:
+        # Exploit the fact each user appers only once in the XML,
+        # possible with multiple role blocks.
+        # Simply count each user with atleast one role block.
+        if user.getElementsByTagName("USER_ROLE"):
+            users_with_role_numer = users_with_role_numer + 1
+
+    return users_with_role_numer
+
 def get_sites(xml_obj):
 
     """
@@ -196,10 +221,14 @@ def __main__(options):
         # Get the number of users registered in GOCDB.
         response = session.get("https://goc.egi.eu/gocdbpi/private/?method=get_user",
                                 verify=verify_server_cert)
-        response = response.text
-        response = xml.dom.minidom.parseString(response)
-        user_number = _parse_get_user_xml(response)
+        response_text = response.text
+        response_xml = xml.dom.minidom.parseString(response_text)
+
+        user_number = _parse_get_user_xml(response_xml)
         gocdb_metrics_dict['Number of registerd GOCDB users'] = user_number
+
+        users_with_role_number = _parse_get_user_xml_roles(response_xml)
+        gocdb_metrics_dict['Number of registerd GOCDB users with a role'] = users_with_role_number
 
     except requests.exceptions.ConnectionError as error:
         print(error)
