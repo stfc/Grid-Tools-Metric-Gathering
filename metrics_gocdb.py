@@ -162,7 +162,11 @@ def __main__(options):
     data within ElasticSearch. If options.write is set to "True",
     the data will also be written to ElasticSearch.
     """
-    verify_server_cert = bool(options.verify == "True")
+
+    if options.verify == "False":
+        verify_server_cert = False
+    else:
+        verify_server_cert = options.verify
 
     es_up = es_check()
     logger = logging.getLogger('GOCDB logger')
@@ -230,9 +234,12 @@ if __name__ == '__main__':
     parser.add_option("-w", "--write-to-elastic", dest="write",
                       default="False",
                       help="Wether to write result to ElasticSearch or not.")
-    parser.add_option("-v", "--verify-server-certificate", dest="verify",
-                      default="True",
-                      help="Wether to verify the server certificate or not.")
+    parser.add_option("-v", "--verify-server-certificate-against",
+                      dest="verify",
+                      default="/etc/grid-security/certificates",
+                      help=("The CA path to validate the server certificate "
+                            "against, or False (no verification)."))
+
     (options, args) = parser.parse_args()
 
     __main__(options)
