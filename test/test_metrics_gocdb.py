@@ -1,7 +1,7 @@
 """This script is a unit test for metrics_gocdb"""
 import xml.dom.minidom
 import unittest
-from metrics_gocdb import _parse_get_user_xml, get_sites, get_countries
+from metrics_gocdb import _parse_get_user_xml, _parse_get_user_xml_roles, get_sites, get_countries
 
 class TestMetricsGOCDB(unittest.TestCase):
     """This class holds the functions needed to test metrics_GOCDBv4"""
@@ -10,6 +10,13 @@ class TestMetricsGOCDB(unittest.TestCase):
         parsed_user_xml = xml.dom.minidom.parseString(GET_USER_XML)
         number_of_user = _parse_get_user_xml(parsed_user_xml)
         self.assertEquals(number_of_user, 2)
+
+    def test_parse_get_user_xml_roles(self):
+        """Test the _parse_get_user_xml method."""
+        parsed_user_xml = xml.dom.minidom.parseString(GET_USER_XML)
+        number_of_user_with_roles = _parse_get_user_xml_roles(parsed_user_xml)
+        self.assertEquals(number_of_user_with_roles, 1)
+
     def test_get_sites(self):
         """Test the get_sites method"""
         parsed_site_xml = xml.dom.minidom.parseString(GET_SITE_XML)
