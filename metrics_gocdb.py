@@ -20,16 +20,6 @@ def _parse_get_user_xml(xml_obj):
     --------
     user_number: int
                  This represents the number of users
-
-    Notes
-    ------
-    Someone who has appropriate permissions could
-    modify this to work with a request to GOCDB. Add
-    the code below to the top of the function!
-
-    xml = requests.get("https://goc.egi.eu/gocdbpi/private/?method=get_user")
-    #user_data = xml.text
-    #context = xml.dom.minidom.parseString(user_data)
     """
 
     users = xml_obj.getElementsByTagName("EGEE_USER")
@@ -203,7 +193,16 @@ def __main__(options):
         gocdb_metrics_dict['Number of countries using GOCDB'] = country_number
         gocdb_metrics_dict['List of countries using GOCDB'] = country_list
 
-    except requests.exceptions.ConnectionError:
+        # Get the number of users registered in GOCDB.
+        response = session.get("https://goc.egi.eu/gocdbpi/private/?method=get_user",
+                                verify=verify_server_cert)
+        response = response.text
+        response = xml.dom.minidom.parseString(response)
+        user_number = _parse_get_user_xml(response)
+        gocdb_metrics_dict['Number of registerd GOCDB users'] = user_number
+
+    except requests.exceptions.ConnectionError as error:
+        print(error)
         logger.error("Error connecting to GOCDB, "
                      "some metrics may not be fetched.")
 
