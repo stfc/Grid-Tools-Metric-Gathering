@@ -7,9 +7,6 @@ import json
 import requests
 from datetime import datetime, timedelta
 
-date = datetime.strftime(datetime.now() - timedelta(1), '%Y.%m.%d')
-
-
 logger = logging.getLogger(__name__)
 
 class GetData(object):
@@ -69,6 +66,9 @@ class ESWrite(object):
     def write(self):
         """This function writes the data to elastic search"""
         self.dictionary = json.dumps(self.dictionary)
+
+        date = datetime.strftime(datetime.now(), '%Y.%m.%d')
+
         requests.post("http://elasticsearch2.gridpp.rl.ac.uk:9200/"
                       "logstash-gridtools-metrics-%s/"
                       "metric_data/" % date,
