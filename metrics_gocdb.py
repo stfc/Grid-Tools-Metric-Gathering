@@ -185,7 +185,7 @@ def get_unique_ips_over_28_days():
     unique_ips = set()
     # For the last 28 days (not counting today), query the unique IPs per day.
     for _ in range(0, 28):
-        date = date - timedelta(1)
+        date = date - timedelta(days=1)
 
         ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
         # use a large timeout here because getting the unique IPs
