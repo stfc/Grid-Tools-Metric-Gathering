@@ -179,11 +179,11 @@ def get_unique_ips_over_28_days():
 
     Only accesses via the load balancers will be counted.
     """
-    date = datetime.now()
     # Use a set to leverage the fact duplicates are handled by the data
     # structure.
     unique_ips = set()
     # For the last 28 days (not counting today), query the unique IPs per day.
+    date = datetime.now()
     for _ in range(0, 28):
         date = date - timedelta(days=1)
 
