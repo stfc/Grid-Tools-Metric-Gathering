@@ -69,9 +69,9 @@ class ESWrite(object):
     def write(self):
         """This function writes the data to elastic search"""
         self.dictionary = json.dumps(self.dictionary)
-        requests.post(("http://elasticsearch2.gridpp.rl.ac.uk:9200/"
-                       "logstash-gridtools-metrics-%s/"
-                       "metric_data/") % date,
+        requests.post("http://elasticsearch2.gridpp.rl.ac.uk:9200/"
+                      "logstash-gridtools-metrics-%s/"
+                      "metric_data/" % date,
                       data=self.dictionary)
 
 def es_check():
