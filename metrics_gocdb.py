@@ -182,53 +182,58 @@ def get_unique_ips_over_28_days():
     # Use a set to leverage the fact duplicates are handled by the data
     # structure.
     unique_ips = set()
+
+    # The ElasticSearch host to query
+    ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
+    # use a large timeout here because getting the unique IPs
+    # per day is a big query.
+    elastic = Elasticsearch(ELASTIC_SEARCH_HOST, timeout=300)
+    # Define the query and aggregation to make on a single index to determine
+    # unique IPs per day.
+    PARAMS_DICT = {
+        "query": {
+            "bool": {
+                "must": [
+                    {"match": {"backend_name": "gocdb-prod"}},
+                ]
+            },
+        },
+        "aggs": {
+            "genres": {
+                "terms": {
+                    # Use client_ip.raw to aggregate otherwise the IP gets
+                    # tokenized into it's subparts, i.e. A.B.C.D becomes
+                    # [A, B, C, D].
+                    "field": "client_ip.raw",
+                    # Agregations don't support pagination until at least
+                    # v5.2.0 of ElastcSearch:
+                    # https://github.com/elastic/elasticsearch/issues/21487
+                    # In the meantime, specify a size of aggregation
+                    # sufficiently high to return all buckets (order of 10
+                    # greater than the expected result).
+                    # We could use "size": 0 here (a.k.a give me all
+                    # the buckets), but that is removed in ElasticSearch
+                    # v5, so whilst this might not be the "best" way of
+                    # doing this aggregation, it should atleast work under
+                    # our current and future versions of ElasticSearch.
+                    "size": 20000,
+                },
+            },
+        },
+        # Don't return any individual query results as we don't care about
+        # the events, just return the aggregated buckets.
+        "size": 0,
+    }
+
     # For the last 28 days (not counting today), query the unique IPs per day.
-    date = datetime.now()
-    for _ in range(0, 28):
-        date = date - timedelta(days=1)
+    today = datetime.now()
+    for i in range(1, 29):
+        date = today - timedelta(days=i)
 
-        ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
-        # use a large timeout here because getting the unique IPs
-        # per day is a big query.
-        elastic = Elasticsearch(ELASTIC_SEARCH_HOST, timeout=300)
-        params_dict = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"match": {"backend_name": "gocdb-prod"}},
-                    ]
-                },
-            },
-            "aggs": {
-                "genres": {
-                    "terms": {
-                        # Use client_ip.raw to aggregate otherwise the IP gets
-                        # tokenized into it's subparts, i.e. A.B.C.D becomes
-                        # [A, B, C, D].
-                        "field": "client_ip.raw",
-                        # Agregations don't support pagination until at least
-                        # v5.2.0 of ElastcSearch:
-                        # https://github.com/elastic/elasticsearch/issues/21487
-                        # In the meantime, specify a size of aggregation
-                        # sufficiently high to return all buckets (order of 10
-                        # greater than the expected result).
-                        # We could use "size": 0 here (a.k.a give me all
-                        # the buckets), but that is removed in ElasticSearch
-                        # v5, so whilst this might not be the "best" way of
-                        # doing this aggregation, it should atleast work under
-                        # our current and future versions of ElasticSearch.
-                        "size": 20000,
-                    },
-                },
-            },
-            # Don't return any individual query results as we don't care about
-            # the events, just return the aggregated buckets.
-            "size": 0,
-        }
-
+        # Format date so we can refer to the ElasticSearch index.
         date_string = datetime.strftime(date, '%Y.%m.%d')
         result = elastic.search(index="logstash-" + date_string,
-                                body=params_dict)
+                                body=PARAMS_DICT)
 
         # The elastic query returns one bucket per unique IP, with the IP
         # address being the bucket key. So add each bucket key to the set of
