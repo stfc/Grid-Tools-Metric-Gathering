@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import logging
 from common import ESWrite, GetData, ModLogger, es_check
 from optparse import OptionParser
-from elasticsearch import Elasticsearch
 
 
 def _parse_get_user_xml(xml_obj):
@@ -132,117 +131,6 @@ def get_countries(xml_obj):
     return (len(country_list), country_list)
 
 
-def get_queries():
-    """
-    This function gets the number of queries GOCDB received the day before
-
-    Returns
-    -------
-    query_num: int
-               This is the number of queries
-
-    Notes
-    -----
-    This collects yesterday's number of GOCDBPI queries whose name starts with
-    "_get". It collects the previous day's data to reduce the possibility
-    of acquiring incomplete data. To futher reduce the possibility the script
-    should be run a sufficient time away from when the statistics update (for
-    example at noon every day).
-    """
-
-    date = datetime.strftime(datetime.now() - timedelta(1), '%Y.%m.%d')
-
-    ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
-    elastic = Elasticsearch(ELASTIC_SEARCH_HOST)
-    params_dict = {
-        "query": {
-            "bool": {
-                "must": [
-                    {"match": {"type": "gocdb"}},
-                    {"match": {"fields.service_level": "prod"}}
-                ]
-            }
-        },
-        "query": {
-            "prefix": {"endpoint": "get_"}
-        },
-        "size": 0
-    }
-
-    result = elastic.search(index="logstash-" + date, body=params_dict)
-    return result["hits"]["total"]
-
-
-def get_unique_ips_over_28_days():
-    """
-    Get the number of unique IP accessing GOCDB over the last 28 days.
-
-    Only accesses via the load balancers will be counted.
-    """
-    # Use a set to leverage the fact duplicates are handled by the data
-    # structure.
-    unique_ips = set()
-
-    # The ElasticSearch host to query
-    ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
-    # use a large timeout here because getting the unique IPs
-    # per day is a big query.
-    elastic = Elasticsearch(ELASTIC_SEARCH_HOST, timeout=300)
-    # Define the query and aggregation to make on a single index to determine
-    # unique IPs per day.
-    PARAMS_DICT = {
-        "query": {
-            "bool": {
-                "must": [
-                    {"match": {"backend_name": "gocdb-prod"}},
-                ]
-            },
-        },
-        "aggs": {
-            "genres": {
-                "terms": {
-                    # Use client_ip.raw to aggregate otherwise the IP gets
-                    # tokenized into it's subparts, i.e. A.B.C.D becomes
-                    # [A, B, C, D].
-                    "field": "client_ip.raw",
-                    # Agregations don't support pagination until at least
-                    # v5.2.0 of ElastcSearch:
-                    # https://github.com/elastic/elasticsearch/issues/21487
-                    # In the meantime, specify a size of aggregation
-                    # sufficiently high to return all buckets (order of 10
-                    # greater than the expected result).
-                    # We could use "size": 0 here (a.k.a give me all
-                    # the buckets), but that is removed in ElasticSearch
-                    # v5, so whilst this might not be the "best" way of
-                    # doing this aggregation, it should atleast work under
-                    # our current and future versions of ElasticSearch.
-                    "size": 20000,
-                },
-            },
-        },
-        # Don't return any individual query results as we don't care about
-        # the events, just return the aggregated buckets.
-        "size": 0,
-    }
-
-    # For the last 28 days (not counting today), query the unique IPs per day.
-    today = datetime.now()
-    for i in range(1, 29):
-        date = today - timedelta(days=i)
-
-        # Format date so we can refer to the ElasticSearch index.
-        date_string = datetime.strftime(date, '%Y.%m.%d')
-        result = elastic.search(index="logstash-" + date_string,
-                                body=PARAMS_DICT)
-
-        # The elastic query returns one bucket per unique IP, with the IP
-        # address being the bucket key. So add each bucket key to the set of
-        # unique IPs.
-        for bucket in result["aggregations"]["genres"]["buckets"]:
-            unique_ips.add(bucket["key"])
-
-    return len(unique_ips)
-
 def __main__(options):
     """
     Runs all of the functions above to generate metrics for GOCDB.
@@ -310,21 +198,6 @@ def __main__(options):
         print(error)
         logger.error("Error connecting to GOCDB, "
                      "some metrics may not be fetched.")
-
-    if es_up == True:
-
-        gocdb_metrics_dict["Number of GOCDB API queries"] = get_queries()
-        gocdb_metrics_dict["Number of unique IPs accessing GOCDB"] = get_unique_ips_over_28_days()
-
-    else:
-
-        print("Elastic search is currently down "
-              "Metrics could not be fetched and "
-              "the dictionary of metrics could"
-              "not be stored.")
-
-        logger.error("Elastic search unresponsive: Data has not"
-                     "been read or written")
 
     if options.write == "True":
         date = datetime.strftime(datetime.now() - timedelta(1), '%Y.%m.%d')
