@@ -207,7 +207,10 @@ def main(options):
     query_type_list = ['storage', 'cloud', 'grid']
 
     # master dictionary
-    apel_metrics_dict = {}
+    apel_metrics_dict = {
+        'type': 'apel_metric',
+        '@timestamp': datetime.now().isoformat()
+    }
 
     all_countries = set()
     try:

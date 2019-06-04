@@ -156,7 +156,10 @@ def __main__(options):
     ModLogger('GOCDB.log').logger_mod()
     logger.info('service has started')
 
-    gocdb_metrics_dict = {}
+    gocdb_metrics_dict = {
+        'type': 'gocdb_metric',
+        '@timestamp': datetime.now().isoformat()
+    }
 
     try:
         # Get the number of registered service providers (aka sites)
