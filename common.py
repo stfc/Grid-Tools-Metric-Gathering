@@ -101,12 +101,3 @@ class ESWrite(object):
             doc_type='doc',
             body=data,
         )
-
-def es_check():
-    '''This function checks to see if elastic search is up '''
-    code = requests.get("http://elasticsearch2.gridpp.rl.ac.uk" +
-                        "/logstash-gridtools-metrics-2018.07.07/gocdb/_search").status_code
-    if code == 200:
-        return True
-    else:
-        return False

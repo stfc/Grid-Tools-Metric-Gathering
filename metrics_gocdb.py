@@ -3,7 +3,7 @@ import requests
 import xml.dom.minidom
 from datetime import datetime, timedelta
 import logging
-from common import ESWrite, GetData, ModLogger, es_check
+from common import ESWrite, GetData, ModLogger
 from optparse import OptionParser
 
 
@@ -150,7 +150,6 @@ def __main__(options):
     session = requests.Session()
     session.cert = (options.certificate, options.key)
 
-    es_up = es_check()
     logger = logging.getLogger('GOCDB logger')
     logger.addHandler(logging.NullHandler())
     ModLogger('GOCDB.log').logger_mod()

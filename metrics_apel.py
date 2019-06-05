@@ -4,7 +4,7 @@ import xml.dom.minidom
 from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 import logging
-from common import GetData, ModLogger, ESWrite, es_check
+from common import GetData, ModLogger, ESWrite
 from optparse import OptionParser
 
 
@@ -200,7 +200,6 @@ def main(options):
 
     logger.info('Service has started')
 
-    es_up = es_check()
     # List of service endpoint types to record metrics about
     endpoint_types = ['gLite-APEL', 'APEL', 'eu.egi.cloud.accounting',
                       'eu.egi.storage.accounting']
@@ -248,13 +247,10 @@ def main(options):
         logger.error("Error connecting to GOCDB, "
                      "some metrics may not be fetched.")
 
-    if es_up == True:
-        for query_type in query_type_list:
-            apel_metrics_dict['Number of records loaded for ' + query_type
-                              + ' accounting'] = get_records(query_type)
-    else:
-        print("Elastic Search is currently down." +
-              " No data could be read or written!")
+    for query_type in query_type_list:
+        apel_metrics_dict['Number of records loaded for ' + query_type
+                          + ' accounting'] = get_records(query_type)
+
 
     if options.write == "True":
         ESWrite(apel_metrics_dict).write()
