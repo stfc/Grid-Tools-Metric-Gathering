@@ -8,7 +8,6 @@ from common import GetData, ModLogger, ESWrite
 from optparse import OptionParser
 
 
-ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
 logger = logging.getLogger('APEL logger')
 country_list = []
 
@@ -161,7 +160,6 @@ def get_records(query_type):
     This function also makes use of the Elasticsearch module.
     """
     date = datetime.strftime(datetime.now() - timedelta(1), '%Y.%m.%d')
-    elastic = Elasticsearch(ELASTIC_SEARCH_HOST)
     params_dict = {
         "query": {
             "bool": {
@@ -177,7 +175,7 @@ def get_records(query_type):
         }
     }
 
-    result = elastic.search(index="logstash-" + date, body=params_dict)
+    result = ESWrite({}).elastic.search(index="logstash-" + date, body=params_dict)
 
     total = result["aggregations"]["total_number_loaded"]["value"]
     return total
