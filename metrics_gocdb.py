@@ -192,10 +192,10 @@ def __main__(options):
         response_xml = xml.dom.minidom.parseString(response_text)
 
         user_number = _parse_get_user_xml(response_xml)
-        gocdb_metrics_dict['Number of registerd GOCDB users'] = user_number
+        gocdb_metrics_dict['Number of registered GOCDB users'] = user_number
 
         users_with_role_number = _parse_get_user_xml_roles(response_xml)
-        gocdb_metrics_dict['Number of registerd GOCDB users with a role'] = users_with_role_number
+        gocdb_metrics_dict['Number of registered GOCDB users with a role'] = users_with_role_number
 
     except requests.exceptions.ConnectionError as error:
         print(error)
