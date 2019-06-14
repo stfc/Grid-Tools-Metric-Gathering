@@ -4,11 +4,10 @@ import xml.dom.minidom
 from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 import logging
-from common import GetData, ModLogger, ESWrite, es_check
+from common import GetData, ModLogger, ESWrite
 from optparse import OptionParser
 
 
-ELASTIC_SEARCH_HOST = "elasticsearch2.gridpp.rl.ac.uk"
 logger = logging.getLogger('APEL logger')
 country_list = []
 
@@ -161,7 +160,6 @@ def get_records(query_type):
     This function also makes use of the Elasticsearch module.
     """
     date = datetime.strftime(datetime.now() - timedelta(1), '%Y.%m.%d')
-    elastic = Elasticsearch(ELASTIC_SEARCH_HOST)
     params_dict = {
         "query": {
             "bool": {
@@ -177,7 +175,7 @@ def get_records(query_type):
         }
     }
 
-    result = elastic.search(index="logstash-" + date, body=params_dict)
+    result = ESWrite({}).elastic.search(index="logstash-" + date, body=params_dict)
 
     total = result["aggregations"]["total_number_loaded"]["value"]
     return total
@@ -200,14 +198,16 @@ def main(options):
 
     logger.info('Service has started')
 
-    es_up = es_check()
     # List of service endpoint types to record metrics about
     endpoint_types = ['gLite-APEL', 'APEL', 'eu.egi.cloud.accounting',
                       'eu.egi.storage.accounting']
     query_type_list = ['storage', 'cloud', 'grid']
 
     # master dictionary
-    apel_metrics_dict = {}
+    apel_metrics_dict = {
+        'type': 'apel_metric',
+        '@timestamp': datetime.now().isoformat()
+    }
 
     all_countries = set()
     try:
@@ -245,13 +245,10 @@ def main(options):
         logger.error("Error connecting to GOCDB, "
                      "some metrics may not be fetched.")
 
-    if es_up == True:
-        for query_type in query_type_list:
-            apel_metrics_dict['Number of records loaded for ' + query_type
-                              + ' accounting'] = get_records(query_type)
-    else:
-        print("Elastic Search is currently down." +
-              " No data could be read or written!")
+    for query_type in query_type_list:
+        apel_metrics_dict['Number of records loaded for ' + query_type
+                          + ' accounting'] = get_records(query_type)
+
 
     if options.write == "True":
         ESWrite(apel_metrics_dict).write()

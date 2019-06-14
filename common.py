@@ -6,6 +6,7 @@ import logging
 import json
 import requests
 from datetime import datetime, timedelta
+from elasticsearch import Elasticsearch
 
 logger = logging.getLogger(__name__)
 
@@ -62,23 +63,41 @@ class ESWrite(object):
     """This class writes to elastic search"""
     def __init__(self, dictionary):
         self.dictionary = dictionary
+        self.elastic = Elasticsearch(
+            [
+                {
+                    'host': 'elasticsearch1.gridpp.rl.ac.uk',
+                    'port': 9200,
+                },
+                {
+                    'host': 'elasticsearch5.gridpp.rl.ac.uk',
+                    'port': 9200,
+                },
+                {
+                    'host': 'elasticsearch6.gridpp.rl.ac.uk',
+                    'port': 9200,
+                },
+                {
+                    'host': 'elasticsearch7.gridpp.rl.ac.uk',
+                    'port': 9200,
+                },
+                {
+                    'host': 'elasticsearch8.gridpp.rl.ac.uk',
+                    'port': 9200,
+                },
+            ],
+            use_ssl=True,
+            verify_certs=False,
+        )
 
     def write(self):
         """This function writes the data to elastic search"""
-        self.dictionary = json.dumps(self.dictionary)
+        data = json.dumps(self.dictionary)
 
         date = datetime.strftime(datetime.now(), '%Y.%m.%d')
 
-        requests.post("http://elasticsearch2.gridpp.rl.ac.uk:9200/"
-                      "logstash-gridtools-metrics-%s/"
-                      "metric_data/" % date,
-                      data=self.dictionary)
-
-def es_check():
-    '''This function checks to see if elastic search is up '''
-    code = requests.get("http://elasticsearch2.gridpp.rl.ac.uk" +
-                        "/logstash-gridtools-metrics-2018.07.07/gocdb/_search").status_code
-    if code == 200:
-        return True
-    else:
-        return False
+        self.elastic.index(
+            index="logstash-gridtools-metrics-%s" % date,
+            doc_type='doc',
+            body=data,
+        )
